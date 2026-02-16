@@ -1,124 +1,78 @@
-const fixedX = 0
-const fixedY = -150
-let freeX = 0
-let freeYOrigin =-0
-let freeY = -0
-const mass = 10
-const g = 9.8
-let t=0
-let deltaT = .1
-let tension = 0
-let force =0
-let k = .1
-let velocity = 20
+// ---- PARAMETERS ----
+let m = 1;        
+let L0 = 1;       
+let k = 100;     
+let g = -9.81;   
+let damping = 0.05; 
 
+let x;           
+let v = -1;      
+
+let scale = 100;  // 1 m -> 100 pixels
+let dt;
+
+let turns = 10;   // spring coils
+let r = 10;       // spring radius
 
 function setup() {
-  createCanvas(800, 600, WEBGL);
-  noFill();
-  stroke(255);
+  createCanvas(400, 400, WEBGL);
+  frameRate(60);
+  dt = 1/60;
+  x = L0 + 1.5;  
 }
 
 function draw() {
   background(0);
+  orbitControl(); // rotate view
 
+  // --- MASS POSITION ---
+  // x = height above "ground" in meters
+  // Free-fall acceleration
+  let compression = max(0, L0 - x); // compression >0 if spring shorter than rest
+  let springForce = (k / m) * compression; // m/s^2
+  let a = g + (compression > 0 ? springForce : 0) - damping * v;
 
+  // --- INTEGRATE ---
+  v += a * dt;
+  x += v * dt;
 
+  // --- SPRING VISUAL COORDS ---
+  let freeY = x * scale;    // top of spring = mass
+  let fixedY;
 
-  
-  tension = k*(freeYOrigin-freeY)
-  
-//  force = g-tension
-  force = tension
-  
-  velocity += force*deltaT
-  freeY += velocity*deltaT
-  
-  
-  
-  
-    let r = 100;
-  let pitch = (fixedY-freeY);
-  let L = 50;
-
-  beginShape();
-  
-  
-  for (let t = 0; t < PI*10; t += 0.05) {
-    vertex (r*sin(t), (-fixedY+t*pitch/(10*PI)), r*cos(t));
-    
-      
-
+  if (compression > 0) {
+    fixedY = 0;            // spring bottom fixed on ground
+  } else {
+    // spring "pogo" phase: lift bottom as mass moves upward
+    fixedY = freeY - L0*scale;
   }
-  
-  endShape();
-  
-  
-  
-  
-  point(fixedX,-(fixedY+freeY)/2)
-  point(fixedX, -fixedY)
-    point(fixedX, -freeY)
 
- // line(fixedX,fixedY,freeX,freeY)
-
-
-  t+=deltaT
-
-}
-
-/* const fixedX = 0
-const fixedY = -150
-let freeX = 0
-let freeYOrigin =-0
-let freeY = -0
-const mass = 10
-const g = 9.8
-let t=0
-let deltaT = .1
-let tension = 0
-let force =0
-let k = .1
-let velocity = 20
-
-
-function setup() {
-  createCanvas(800, 600, WEBGL);
-  noFill();
+  // --- DRAW SPRING AS HELIX ---
   stroke(255);
-}
-
-function draw() {
-  background(0);
-
-
-
-
-  
-  tension = k*(freeYOrigin-freeY)
-  
-//  force = g-tension
-  force = tension
-  
-  velocity += force*deltaT
-  freeY += velocity*deltaT
-  
-  
-  
-  
-    let r = 100;
-  let pitch = (fixedY-freeY);
-  let L = 50;
-
+  noFill();
   beginShape();
-  for (let t = 0; t < PI*10; t += 0.05) {
-    vertex (r*sin(t), fixedY-t*pitch/20, r*cos(t));
+  let N = 100;
+  for (let i = 0; i <= N; i++){
+    let t = map(i, 0, N, 0, TWO_PI*turns);
+    let y = map(i, 0, N, fixedY, freeY);
+    let xPos = r * cos(t);
+    let zPos = r * sin(t);
+    vertex(xPos, -y, zPos);
   }
   endShape();
-  
- // line(fixedX,fixedY,freeX,freeY)
 
+  // --- DRAW MASS ---
+  push();
+  translate(0, -freeY, 0);
+  fill(0,255,0);
+  noStroke();
+  sphere(8);
+  pop();
 
-  t+=deltaT
-
+  // --- DRAW GROUND ---
+  push();
+  translate(0, 0, 0); // ground at y=0
+  stroke(100);
+  line(-100,0,100,0);
+  pop();
 }
